@@ -3,285 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>3D Model Viewer</title>
+<title>3D Viewer</title>
 
 <style>
-
 body{
     margin:0;
     overflow:hidden;
-    background:#05070d;
+    background:#000;
     font-family:sans-serif;
 }
 
-/* TOP TEXT */
-#title{
+#status{
     position:absolute;
     top:20px;
-    width:100%;
-    text-align:center;
-    color:white;
-    font-size:22px;
-    letter-spacing:2px;
-    z-index:10;
-    text-shadow:0 0 10px cyan;
-}
-
-/* LOADING */
-#loading{
-    position:absolute;
-    bottom:20px;
-    width:100%;
-    text-align:center;
+    left:20px;
     color:#00ffff;
-    font-size:16px;
     z-index:10;
+    background:#111;
+    padding:10px 15px;
+    border-radius:12px;
 }
 
 canvas{
     display:block;
 }
-
 </style>
 </head>
 <body>
 
-<div id="title">3D MODEL VIEWER</div>
-<div id="loading">Loading Model...</div>
+<div id="status">Starting...</div>
 
 <script type="module">
 
-/* THREE JS */
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.165/build/three.module.js";
 
-/* MODEL LOADER */
-import { GLTFLoader } from "https://cdn.jsdelivr.net/npm/three@0.165/examples/jsm/loaders/GLTFLoader.js";
+import { GLTFLoader }
+from "https://cdn.jsdelivr.net/npm/three@0.165/examples/jsm/loaders/GLTFLoader.js";
 
-/* CAMERA CONTROL */
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.165/examples/jsm/controls/OrbitControls.js";
+import { OrbitControls }
+from "https://cdn.jsdelivr.net/npm/three@0.165/examples/jsm/controls/OrbitControls.js";
 
-
+const status = document.getElementById("status");
 
 /* SCENE */
 const scene = new THREE.Scene();
 
-scene.background = new THREE.Color(0x05070d);
-
-
-
 /* CAMERA */
 const camera = new THREE.PerspectiveCamera(
-    60,
-    window.innerWidth/window.innerHeight,
-    0.1,
-    1000
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
 );
 
 camera.position.set(0,1.5,4);
 
-
-
 /* RENDERER */
 const renderer = new THREE.WebGLRenderer({
-    antialias:true
+antialias:true
 });
 
-renderer.setSize(window.innerWidth,window.innerHeight);
-
-renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
 
 document.body.appendChild(renderer.domElement);
 
-
-
 /* CONTROLS */
-const controls = new OrbitControls(camera,renderer.domElement);
+const controls =
+new OrbitControls(camera,renderer.domElement);
 
 controls.enableDamping = true;
 
-controls.dampingFactor = 0.05;
-
-controls.minDistance = 2;
-
-controls.maxDistance = 10;
-
-
-
-/* LIGHTS */
-
-/* AMBIENT */
-const ambientLight = new THREE.AmbientLight(0xffffff,1);
-
-scene.add(ambientLight);
-
-/* MAIN LIGHT */
-const dirLight = new THREE.DirectionalLight(0xffffff,2);
-
-dirLight.position.set(5,10,7);
-
-scene.add(dirLight);
-
-/* BLUE LIGHT */
-const blueLight = new THREE.PointLight(0x00ffff,20,20);
-
-blueLight.position.set(-3,2,3);
-
-scene.add(blueLight);
-
-
-
-/* FLOOR */
-const floorGeo = new THREE.CircleGeometry(10,64);
-
-const floorMat = new THREE.MeshStandardMaterial({
-    color:0x111111,
-    metalness:0.4,
-    roughness:0.5
-});
-
-const floor = new THREE.Mesh(floorGeo,floorMat);
-
-floor.rotation.x = -Math.PI/2;
-
-floor.position.y = -1.2;
-
-scene.add(floor);
-
-
-
-/* MODEL */
-const loader = new GLTFLoader();
-
-let model;
-
-/*
-    model.glb
-    fayli index.html bilan bir papkada bo'lishi kerak
-*/
-
-loader.load(
-
-    "model.glb",
-
-    function(gltf){
-
-        model = gltf.scene;
-
-        scene.add(model);
-
-        /* MODEL SIZE */
-        model.scale.set(1,1,1);
-
-        /* MODEL POSITION */
-        model.position.set(0,-1,0);
-
-        document.getElementById("loading").innerHTML =
-        "Model Loaded";
-
-    },
-
-    function(xhr){
-
-        const percent =
-        (xhr.loaded / xhr.total * 100).toFixed(0);
-
-        document.getElementById("loading").innerHTML =
-        "Loading " + percent + "%";
-
-    },
-
-    function(error){
-
-        console.log(error);
-
-        document.getElementById("loading").innerHTML =
-        "Model ERROR";
-
-    }
-
+/* LIGHT */
+const light = new THREE.HemisphereLight(
+0xffffff,
+0x444444,
+3
 );
 
+scene.add(light);
 
+/* GRID */
+const grid = new THREE.GridHelper(10,10);
 
-/* PARTICLES */
+scene.add(grid);
 
-const particleCount = 500;
+/* LOADER */
+const loader = new GLTFLoader();
 
-const positions = [];
+status.innerHTML = "Loading model...";
 
-for(let i=0;i<particleCount;i++){
+/* LOAD MODEL */
+loader.load(
 
-    positions.push(
-        (Math.random()-0.5)*20,
-        (Math.random()-0.5)*20,
-        (Math.random()-0.5)*20
-    );
+"./model.glb",
+
+function(gltf){
+
+    const model = gltf.scene;
+
+    scene.add(model);
+
+    model.position.y = 0;
+
+    model.scale.set(1,1,1);
+
+    status.innerHTML = "MODEL SUCCESS";
+
+    console.log("MODEL LOADED");
+
+},
+
+function(xhr){
+
+    if(xhr.total){
+
+        const p =
+        (xhr.loaded/xhr.total*100).toFixed(0);
+
+        status.innerHTML =
+        "Loading " + p + "%";
+    }
+
+},
+
+function(error){
+
+    console.log(error);
+
+    status.innerHTML =
+    "ERROR: " + error.message;
 
 }
 
-const particleGeo = new THREE.BufferGeometry();
-
-particleGeo.setAttribute(
-    'position',
-    new THREE.Float32BufferAttribute(positions,3)
 );
-
-const particleMat = new THREE.PointsMaterial({
-    size:0.03,
-    color:0x00ffff
-});
-
-const particles = new THREE.Points(
-    particleGeo,
-    particleMat
-);
-
-scene.add(particles);
-
-
 
 /* ANIMATION */
 function animate(){
 
-    requestAnimationFrame(animate);
+requestAnimationFrame(animate);
 
-    controls.update();
+controls.update();
 
-    /* MODEL ROTATE */
-    if(model){
-
-        model.rotation.y += 0.003;
-
-    }
-
-    /* PARTICLES ROTATE */
-    particles.rotation.y += 0.0008;
-
-    renderer.render(scene,camera);
+renderer.render(scene,camera);
 
 }
 
 animate();
 
-
-
 /* RESIZE */
 window.addEventListener("resize",()=>{
 
-    camera.aspect =
-    window.innerWidth/window.innerHeight;
+camera.aspect =
+window.innerWidth/window.innerHeight;
 
-    camera.updateProjectionMatrix();
+camera.updateProjectionMatrix();
 
-    renderer.setSize(
-        window.innerWidth,
-        window.innerHeight
-    );
+renderer.setSize(
+window.innerWidth,
+window.innerHeight
+);
 
 });
 
 </script>
-
 </body>
 </html>
